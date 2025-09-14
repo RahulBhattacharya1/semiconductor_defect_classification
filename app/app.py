@@ -62,7 +62,9 @@ with col1:
 with col2:
     st.subheader("Prediction")
     try:
-        pred, proba = predict_one(img, model_path=model_path)
+        from src.predict import load_model  # add near your other imports
+        pipe, classes = load_model(model_path)
+        pred, proba = predict_one(img, pipe=pipe, classes=classes)
         st.write(f"Predicted class: **{pred}**")
         st.bar_chart(pd.DataFrame.from_dict(proba, orient="index", columns=["probability"]))
     except Exception as e:
