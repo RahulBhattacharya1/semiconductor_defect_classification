@@ -6,18 +6,25 @@ from PIL import Image
 
 from .features import features_from_image
 
-def load_model(path="models/trained/model.pkl"):
-    """Load model; if unpickling fails (version/ABI mismatch), retrain once and load."""
+def _retrain(path: Path):
+    """Train a small RF so the app always has a working model."""
+    from .train import train_model
+    path.parent.mkdir(parents=True, exist_ok=True)
+    # small, fast training set; adjusts to whatever sklearn/numpy is installed
+    train_model(n=400, seed=7, save_path=str(path), csv_out=None)
+
+def load_model(path: str = "models/trained/model.pkl"):
+    """
+    Load a model. If unpickling fails due to version/ABI changes or file is missing,
+    retrain once and then load.
+    """
     p = Path(path)
     try:
         with open(p, "rb") as f:
             blob = pickle.load(f)
         return blob["pipe"], blob["classes"]
     except Exception:
-        # Fallback: retrain a small model in-place so the app keeps working
-        from .train import train_model
-        p.parent.mkdir(parents=True, exist_ok=True)
-        train_model(n=400, seed=7, save_path=str(p), csv_out=None)
+        _retrain(p)
         with open(p, "rb") as f:
             blob = pickle.load(f)
         return blob["pipe"], blob["classes"]
@@ -38,8 +45,8 @@ def prepare_img_from_png_bytes(b):
         arr = arr / arr.max()
     return arr
 
-def predict_one(arr, model_path="models/trained/model.pkl", pipe=None, classes=None):
-    """Predict from an image. If no model provided, load (and auto-retrain if needed)."""
+def predict_one(arr, model_path: str = "models/trained/model.pkl", pipe=None, classes=None):
+    """Predict using an already-loaded pipe/classes, or load (and retrain if needed)."""
     if pipe is None or classes is None:
         pipe, classes = load_model(model_path)
     feat = features_from_image(arr).reshape(1, -1)
