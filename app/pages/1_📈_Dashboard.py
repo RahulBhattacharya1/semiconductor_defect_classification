@@ -1,55 +1,74 @@
-from pathlib import Path
-import os, sys
+from __future__ import annotations
 
-import streamlit as st
 import numpy as np
-import pandas as pd
+import streamlit as st
 import matplotlib.pyplot as plt
 
-# repo root & app dir
-ROOT = Path(__file__).resolve().parents[2]   # repo/
-APP_DIR = Path(__file__).resolve().parents[1]  # repo/app/
-for p in (ROOT, APP_DIR):
-    if str(p) not in sys.path:
-        sys.path.insert(0, str(p))
+st.set_page_config(page_title="Dashboard • Wafer Map Defect Classifier", layout="wide")
 
-from src.generate_data import make_dataset, CLASSES
-from src.features import batch_features
-from src.predict import load_model
-from components.wafer_plot import wafer_imshow
+st.title("Dashboard")
+st.caption("Model-free demo dashboard with synthetic metrics for the wafer classes.")
 
-st.title("📈 Dashboard")
+CLASSES = ["center", "edge_ring", "scratch", "donut", "random"]
 
-with st.sidebar:
-    n = st.slider("Synthetic samples", min_value=100, max_value=1000, value=300, step=50)
-    seed = st.number_input("Seed", value=7, step=1)
+# Controls
+colA, colB, colC = st.columns(3)
+with colA:
+    n_samples = st.slider("Samples", 100, 5000, 1000, step=100)
+with colB:
+    rng_seed = st.number_input("Seed", 0, 99999, 42, step=1)
+with colC:
+    show_conf = st.checkbox("Show confusion matrix", True)
 
-model_path = str(ROOT / "models" / "trained" / "model.pkl")
-pipe, classes = load_model(path=model_path)  # use correct kwarg
+rng = np.random.default_rng(int(rng_seed))
 
-Ximgs, y = make_dataset(n=int(n), seed=int(seed), classes=CLASSES)
-X = batch_features(Ximgs)
-yhat = pipe.predict(X)
+# Fake per-class support and accuracy just to render charts without a trained model.
+support = rng.integers(low=max(10, n_samples // 40), high=max(20, n_samples // 10), size=len(CLASSES))
+support = (support / support.sum() * n_samples).astype(int)
+per_class_acc = np.clip(rng.normal(loc=0.82, scale=0.08, size=len(CLASSES)), 0.4, 0.98)
 
-# KPIs
-st.subheader("KPIs")
-col1, col2, col3 = st.columns(3)
-acc = float((yhat == y).mean())
-col1.metric("Accuracy", f"{acc*100:.2f}%")
-counts = pd.Series(y).value_counts().reindex(classes, fill_value=0)
-col2.metric("Classes", len(classes))
-col3.metric("Samples", len(y))
+# Summary metrics
+overall_acc = float(np.average(per_class_acc, weights=support))
+st.metric("Overall accuracy (demo)", f"{overall_acc*100:.1f}%")
 
-# Distribution by class
-st.subheader("Class distribution")
-st.bar_chart(counts)
+# Bar: per-class accuracy
+fig1, ax1 = plt.subplots(layout="constrained", figsize=(6, 3))
+ax1.bar(CLASSES, per_class_acc)
+ax1.set_ylim(0, 1)
+ax1.set_ylabel("accuracy")
+ax1.set_title("Per-class accuracy (demo)")
+for i, v in enumerate(per_class_acc):
+    ax1.text(i, v + 0.02, f"{v:.2f}", ha="center", va="bottom", fontsize=9)
+st.pyplot(fig1, use_container_width=True)  # ✅ correct usage
 
-# Sample gallery
-st.subheader("Sample wafer maps")
-cols = st.columns(5)
-for i in range(min(10, len(Ximgs))):
-    c = cols[i % 5]
-    with c:
-        fig, ax = plt.subplots(figsize=(2, 2))
-        wafer_imshow(Ximgs[i], ax=ax, title=f"y={y[i]} / ŷ={yhat[i]}")
-        st.pyplot(fig, width="content")
+# Support chart
+fig2, ax2 = plt.subplots(layout="constrained", figsize=(6, 3))
+ax2.bar(CLASSES, support)
+ax2.set_ylabel("samples")
+ax2.set_title("Per-class support (demo)")
+st.pyplot(fig2, use_container_width=True)  # ✅ correct usage
+
+# Confusion matrix (demo)
+if show_conf:
+    # Construct a plausible confusion matrix consistent with the supports and accuracies
+    cm = np.zeros((len(CLASSES), len(CLASSES)), dtype=float)
+    for i, s in enumerate(support):
+        tp = int(round(s * per_class_acc[i]))
+        fp = s - tp
+        cm[i, i] = tp
+        if fp > 0:
+            off = rng.dirichlet(np.ones(len(CLASSES) - 1)) * fp
+            cm[i, np.arange(len(CLASSES)) != i] = off
+    # Normalize row-wise to show rates
+    row_sum = cm.sum(axis=1, keepdims=True) + 1e-9
+    cm_norm = cm / row_sum
+
+    fig3, ax3 = plt.subplots(layout="constrained", figsize=(6, 6))
+    im = ax3.imshow(cm_norm, interpolation="nearest")
+    ax3.set_title("Confusion matrix (row-normalized, demo)")
+    ax3.set_xticks(range(len(CLASSES))); ax3.set_xticklabels(CLASSES, rotation=30, ha="right")
+    ax3.set_yticks(range(len(CLASSES))); ax3.set_yticklabels(CLASSES)
+    for i in range(len(CLASSES)):
+        for j in range(len(CLASSES)):
+            ax3.text(j, i, f"{cm_norm[i, j]:.2f}", ha="center", va="center", fontsize=9)
+    st.pyplot(fig3, use_container_width=True)  # ✅ correct usage
