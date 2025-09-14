@@ -5,6 +5,16 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+# add the app folder itself so we can import 'components'
+APP_DIR = Path(__file__).resolve().parent
+if str(APP_DIR) not in sys.path:
+    sys.path.insert(0, str(APP_DIR))
+
+from src.generate_data import synth_wafer, CLASSES
+from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
+
+from components.wafer_plot import wafer_imshow
+
 # --- Make repo root importable so 'app' and 'src' resolve everywhere ---
 ROOT = Path(__file__).resolve().parents[1]   # repo root
 if str(ROOT) not in sys.path:
@@ -12,7 +22,6 @@ if str(ROOT) not in sys.path:
 
 from src.generate_data import synth_wafer, CLASSES
 from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
-from app.components.wafer_plot import wafer_imshow
 
 MODEL_PATH = ROOT / "models" / "trained" / "model.pkl"
 
