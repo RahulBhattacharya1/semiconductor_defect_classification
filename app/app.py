@@ -3,8 +3,12 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+import sys, os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+
 from src.generate_data import synth_wafer, CLASSES
 from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
+
 from app.components.wafer_plot import wafer_imshow
 
 st.set_page_config(page_title="Wafer Map Defect Classifier", layout="wide")
