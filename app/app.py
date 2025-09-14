@@ -1,27 +1,26 @@
-import os, sys
 from pathlib import Path
+import os, sys
+
 import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-# add the app folder itself so we can import 'components'
-APP_DIR = Path(__file__).resolve().parent
-if str(APP_DIR) not in sys.path:
-    sys.path.insert(0, str(APP_DIR))
+# --- Make repo root & app dir importable ---
+ROOT = Path(__file__).resolve().parents[1]      # repo/
+APP_DIR = Path(__file__).resolve().parent       # repo/app/
+for p in (ROOT, APP_DIR):
+    if str(p) not in sys.path:
+        sys.path.insert(0, str(p))
 
 from src.generate_data import synth_wafer, CLASSES
-from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
-
+from src.predict import (
+    predict_one,
+    prepare_img_from_csv_bytes,
+    prepare_img_from_png_bytes,
+)
+# IMPORTANT: import the sibling package directly to avoid "app is not a package"
 from components.wafer_plot import wafer_imshow
-
-# --- Make repo root importable so 'app' and 'src' resolve everywhere ---
-ROOT = Path(__file__).resolve().parents[1]   # repo root
-if str(ROOT) not in sys.path:
-    sys.path.insert(0, str(ROOT))
-
-from src.generate_data import synth_wafer, CLASSES
-from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
 
 MODEL_PATH = ROOT / "models" / "trained" / "model.pkl"
 
@@ -36,8 +35,9 @@ with st.sidebar:
     seed = st.number_input("Random seed", value=42, step=1)
     model_path = str(MODEL_PATH)
 
-col1, col2 = st.columns([1,1])
+col1, col2 = st.columns([1, 1])
 
+# --- Input image ---
 if mode == "Generate":
     img = synth_wafer(kind=default_kind, seed=int(seed))
 else:
@@ -51,12 +51,14 @@ else:
         st.info("Upload a CSV (28×28) or PNG to run inference, or switch to Generate.")
         img = synth_wafer(kind=default_kind, seed=int(seed))
 
+# --- Left: wafer preview ---
 with col1:
     st.subheader("Wafer Map")
-    fig, ax = plt.subplots(figsize=(4,4))
+    fig, ax = plt.subplots(figsize=(4, 4))
     wafer_imshow(img, ax=ax, title="Input")
-    st.pyplot(fig, use_container_width=False)
+    st.pyplot(fig, width="content")  # replaces deprecated use_container_width
 
+# --- Right: prediction ---
 with col2:
     st.subheader("Prediction")
     try:
