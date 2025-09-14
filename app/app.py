@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
+from src.predict import load_model
+
 # --- Make repo root & app dir importable ---
 ROOT = Path(__file__).resolve().parents[1]      # repo/
 APP_DIR = Path(__file__).resolve().parent       # repo/app/
