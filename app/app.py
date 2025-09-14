@@ -62,13 +62,13 @@ with col1:
     wafer_imshow(img, ax=ax, title="Input")
     st.pyplot(fig, width="content")  # (replaces deprecated use_container_width)
 
-# Right: prediction (robust to pickle/ABI issues)
+# --- Right: prediction ---
 with col2:
     st.subheader("Prediction")
 
-    # Build a tiny demo model in memory if loading fails (no pickle dependency)
     @st.cache_resource(show_spinner=False)
     def _build_demo_model():
+        # Train a small model in this environment (no pickles)
         from src.generate_data import make_dataset, CLASSES as _CLASSES
         from src.features import batch_features
         from sklearn.pipeline import Pipeline
@@ -89,19 +89,10 @@ with col2:
         return pipe, classes
 
     try:
-        # 1) Try on-disk model (may be missing or binary-incompatible)
-        try:
-            pipe, classes = _load_model(model_path)
-        except Exception:
-            # 2) Fall back to an in-memory model trained in this environment
-            pipe, classes = _build_demo_model()
-
-        # Predict with the already-loaded model
+        pipe, classes = _build_demo_model()   # ← always use the in-memory model
         pred, proba = predict_one(img, pipe=pipe, classes=classes)
         st.write(f"Predicted class: **{pred}**")
         st.bar_chart(pd.DataFrame.from_dict(proba, orient="index", columns=["probability"]))
     except Exception as e:
         st.error(f"Model not available or failed to predict: {e}")
 
-st.divider()
-st.write("Use the pages on the left for a dashboard and model analysis.")
