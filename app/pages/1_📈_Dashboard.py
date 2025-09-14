@@ -1,3 +1,13 @@
+import os, sys
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+if ROOT not in sys.path:
+    sys.path.append(ROOT)
+
+from src.generate_data import make_dataset, CLASSES
+from src.features import batch_features
+from src.predict import load_model
+from app.components.wafer_plot import wafer_imshow
+
 import streamlit as st
 import numpy as np
 import pandas as pd
