@@ -1,28 +1,22 @@
 import os, sys
-# add repo root so `app` and `src` are importable
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-if ROOT not in sys.path:
-    sys.path.append(ROOT)
-
-from src.generate_data import synth_wafer, CLASSES
-from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
-from app.components.wafer_plot import wafer_imshow
-
+from pathlib import Path
 import streamlit as st
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-import sys, os
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+# --- Make repo root importable so 'app' and 'src' resolve everywhere ---
+ROOT = Path(__file__).resolve().parents[1]   # repo root
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
 
 from src.generate_data import synth_wafer, CLASSES
 from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
-
 from app.components.wafer_plot import wafer_imshow
 
-st.set_page_config(page_title="Wafer Map Defect Classifier", layout="wide")
+MODEL_PATH = ROOT / "models" / "trained" / "model.pkl"
 
+st.set_page_config(page_title="Wafer Map Defect Classifier", layout="wide")
 st.title("Wafer Map Defect Classifier")
 st.caption("Synthetic demo for yield engineering: center, edge_ring, scratch, donut, random")
 
@@ -31,7 +25,7 @@ with st.sidebar:
     mode = st.radio("Input Mode", ["Generate", "Upload"])
     default_kind = st.selectbox("Default class", CLASSES, index=0)
     seed = st.number_input("Random seed", value=42, step=1)
-    model_path = "models/trained/model.pkl"
+    model_path = str(MODEL_PATH)
 
 col1, col2 = st.columns([1,1])
 
@@ -62,7 +56,6 @@ with col2:
         st.bar_chart(pd.DataFrame.from_dict(proba, orient="index", columns=["probability"]))
     except Exception as e:
         st.error(f"Model not available or failed to predict: {e}")
-        st.stop()
 
 st.divider()
 st.write("Use the pages on the left for a dashboard and model analysis.")
