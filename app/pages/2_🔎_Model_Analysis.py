@@ -27,7 +27,7 @@ with st.sidebar:
 Ximgs, y = make_dataset(n=n, seed=int(seed), classes=CLASSES)
 X = batch_features(Ximgs)
 
-pipe, classes = load_model(model_path=model_path)
+pipe, classes = load_model(model_path)
 yhat = pipe.predict(X)
 
 st.subheader("Confusion matrix")
