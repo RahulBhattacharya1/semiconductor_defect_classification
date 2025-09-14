@@ -6,7 +6,7 @@ if ROOT not in sys.path:
 from src.generate_data import make_dataset, CLASSES
 from src.features import batch_features
 from src.predict import load_model
-from app.components.wafer_plot import wafer_imshow
+from components.wafer_plot import wafer_imshow
 
 import streamlit as st
 import numpy as np
@@ -16,7 +16,7 @@ import matplotlib.pyplot as plt
 from src.generate_data import make_dataset, CLASSES
 from src.features import batch_features
 from src.predict import load_model
-from app.components.wafer_plot import wafer_imshow
+from components.wafer_plot import wafer_imshow
 
 st.title("📈 Dashboard")
 
