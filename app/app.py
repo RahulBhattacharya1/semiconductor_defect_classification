@@ -1,3 +1,13 @@
+import os, sys
+# add repo root so `app` and `src` are importable
+ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+if ROOT not in sys.path:
+    sys.path.append(ROOT)
+
+from src.generate_data import synth_wafer, CLASSES
+from src.predict import predict_one, prepare_img_from_csv_bytes, prepare_img_from_png_bytes
+from app.components.wafer_plot import wafer_imshow
+
 import streamlit as st
 import numpy as np
 import pandas as pd
